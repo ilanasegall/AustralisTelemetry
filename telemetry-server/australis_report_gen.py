@@ -26,7 +26,7 @@ def get_week_endpoints(week_no, year=2014):
   year_start = datetime(year,1,1).date()
   first_tues = year_start + timedelta(days=((8 - year_start.weekday()) % 7))
 
-  if type(week_no) is int:
+  if week_no:
     start = first_tues + timedelta(days=7*(int(week_no)-1))
     end = start + timedelta(days=6) #endpoints are inclusive
 
@@ -70,8 +70,7 @@ def generate_filters(args, output_file):
     channels = filter(lambda x: args.__dict__[x] is True, chans)
 
     version_min, version_max = None, None
-
-    if type(args.version) is int:
+    if args.version:
       version_min = str(args.version) + ".0"
       version_max = str(args.version) + ".999"
     elif len(channels) == 1 and args.version == "current":
@@ -175,9 +174,15 @@ args = parser.parse_args()
 
 current_dir = sys.path[0]
 
+if args.week == "current":
+  args.week = get_current_weekno()
+
 if not args.tag:
   if args.week != "current":
-    args.tag = "2014_" + args.week
+    if not args.week:
+      args.tag = "2014"
+    else:
+      args.tag = "2014_" + str(args.week)
   elif args.week == "current":
     args.tag = "2014_" + str(get_current_weekno())
 
@@ -187,6 +192,6 @@ output_dir = "/".join([current_dir,OUTPUT_DIR_BASE,args.tag]) + "/"
 proc = subprocess.Popen(["mkdir","/".join([current_dir,OUTPUT_DIR_BASE,args.tag])])
 proc.wait()
 
-filterfile = generate_filters(args, output_dir + "filter.json" )
+filterfile = generate_filters(args, output_dir + "filter.json")
 error, mr_file = run_mr(filterfile, output_dir + "mr_output.csv", args.local_only)
 process_output(open(mr_file), output_dir + "out.csv")
