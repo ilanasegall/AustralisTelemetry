@@ -69,17 +69,24 @@ def generate_filters(args, output_file):
     chans = {key: args.__dict__[key] for key in ("nightly", "aurora", "beta", "release")}
     channels = filter(lambda x: args.__dict__[x] is True, chans)
 
-    version_min, version_max = None, None
-    if args.version:
-      version_min = str(args.version) + ".0"
-      version_max = str(args.version) + ".999"
-    elif len(channels) == 1 and args.version == "current":
+    version_min = version_max = None
+
+    #right now, assume always one channel. fix later if needed
+    if args.version == "current":
       args.version = curr_version(channels[0])
       version_min = str(args.version) + ".0"
       version_max = str(args.version) + ".999"
-    else:
+
+    elif args.version is None:
       version_min = "0.0"
       version_max = "999.999"
+
+    else:
+      version_min = str(args.version) + ".0"
+      version_max = str(args.version) + ".999"
+
+
+      
 
     start, end = get_week_endpoints(args.week)
 
@@ -187,8 +194,6 @@ if not args.tag:
     args.tag = "2014_" + str(get_current_weekno())
 
 output_dir = "/".join([current_dir,OUTPUT_DIR_BASE,args.tag]) + "/"
-# proc = subprocess.Popen(["ls","/".join([current_dir,OUTPUT_DIR_BASE,args.tag, PIPE=stdout])])
-# print proc.communicate()
 proc = subprocess.Popen(["mkdir","/".join([current_dir,OUTPUT_DIR_BASE,args.tag])])
 proc.wait()
 
