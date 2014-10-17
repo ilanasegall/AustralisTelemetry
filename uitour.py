@@ -1,4 +1,3 @@
-# Same as the osdistribution.py example in jydoop
 from collections import defaultdict
 import json
 import sys
@@ -91,22 +90,10 @@ def map(k, d, v, cx):
     print >> sys.stderr, traceback.format_exc()
     cx.write("ERROR:", str(e))
 
-def combine(k, v, cx):
-  if k == "ERROR:":
+def reduce(k, v, cx):
+  if k == "JSON PARSE ERROR:":
     for i in set(v):
       cx.write(k, i)
-    return
-  if k.endswith(" count") or k.endswith(" sum"):
-    cx.write(k + " sum", sum(pymap(float,v)))
     return
   cx.write(k + " count", len(v))
   cx.write(k + " sum", sum(pymap(float,v)))
-
-def reduce(k, v, cx):
-  if k == "ERROR:":
-    for i in set(v):
-      cx.write(k, i)
-    return
-
-  cx.write(u",".join([k,"count"]), len(v))
-  cx.write(u",".join([k,"sum"]), sum(pymap(float,v)))

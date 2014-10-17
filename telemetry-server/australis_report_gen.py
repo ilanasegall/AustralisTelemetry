@@ -181,6 +181,8 @@ args = parser.parse_args()
 
 current_dir = sys.path[0]
 
+#change to most recently COMPLETED week <---- 
+#make sure version no correct
 if args.week == "current":
   args.week = get_current_weekno()
 
