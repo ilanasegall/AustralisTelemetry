@@ -18,6 +18,12 @@ AustalisTelemetry/analysis/output/test/mr_output.csv
 AustalisTelemetry/analysis/output/test/out.csv
 ```
 
+To view the filter:
+```Shell 
+cat AustalisTelemetry/analysis/output/test/filter.json
+```
+For the above example, the filter should reflect the last full week (Tues - Mon) of the current week and current version on release.
+
 
 
 Original instructions
