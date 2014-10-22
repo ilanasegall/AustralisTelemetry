@@ -4,16 +4,24 @@ AustralisTelemetry
 
 To run example weekly pull of this fork on telemetry machine:
 
+```Shell
 git clone https://github.com/ilanasegall/AustralisTelemetry.git
-
 cd AustralisTelemetry/telemetry-server
+python australis_report_gen.py --release --version=current --week=current -t test
+```
 
-python australis_report_gen.py --release --version=current --week=current
+These three files should exist and be populated:
+
+```Shell
+AustalisTelemetry/analysis/output/test/filter.json
+AustalisTelemetry/analysis/output/test/mr_output.csv
+AustalisTelemetry/analysis/output/test/out.csv
+```
 
 
 
-
-
+Original instructions
+=====================
 
 
 
