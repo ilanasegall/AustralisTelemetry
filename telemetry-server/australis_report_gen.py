@@ -145,7 +145,8 @@ def run_mr(filter, output_file, local_only):
     "work_dir" : "../work",
     "output" : output_file,
     "bucket" : "telemetry-published-v2",
-    "local_only" : local_only
+    "local_only" : local_only,
+    "delete_data" : True
   }
 
   if not args["local_only"]:
