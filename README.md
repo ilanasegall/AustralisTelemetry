@@ -1,6 +1,22 @@
 AustralisTelemetry
 ==================
 
+
+To run example weekly pull of this fork on telemetry machine:
+
+git clone https://github.com/ilanasegall/AustralisTelemetry.git
+
+cd AustralisTelemetry/telemetry-server
+
+python australis_report_gen.py --release --version=current --week=current
+
+
+
+
+
+
+
+
 A repo to store the telemetry parse scripts I’m using…
 
 Includes the [telemetry-server](https://github.com/mozilla/telemetry-server.git).
