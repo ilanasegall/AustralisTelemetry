@@ -5,6 +5,8 @@ AustralisTelemetry
 To run example weekly pull of this fork on telemetry machine:
 
 ```Shell
+sudo chown ubuntu:ubuntu /mnt/telemetry
+cd /mnt/telemetry
 git clone https://github.com/ilanasegall/AustralisTelemetry.git
 cd AustralisTelemetry/telemetry-server
 python australis_report_gen.py --release --version=current --week=current -t test
