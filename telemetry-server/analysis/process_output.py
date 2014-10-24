@@ -40,21 +40,25 @@ def process_output(filecontents, outfile):
 			continue
 
 		tokens = re.split(',|\s', line)
-		if tokens[ITEM] == "instances" and tokens[TYPE] == "count":
+		if tokens[ITEM] == "instances":
 			instances[tokens[PREFIX]] = float(tokens[COUNT])
 			continue
 
+		#tabs need to be special cased
+		if "visibleTabs" in tokens[ITEM] or "hiddenTabs" in tokens[ITEM]:
+			continue
+
 		#right now, only look at counts with all fields included
-		counts[tuple(tokens[PREFIX:ITEM+1])][tokens[TYPE]] = tokens[COUNT]
+		counts[tuple(tokens[PREFIX:ITEM+1])][tokens[TYPE]] += float(tokens[COUNT])
 
 	with open(outfile, "w") as outfile:
 		csvwriter = csv.writer(outfile)
-		csvwriter.writerow(["sys_info","tour_bucket", "item","instances_per_session","percent_sessions_with_occurrence"])
+		csvwriter.writerow(["sys_info","tour_bucket", "item","instances_per_session","percent_sessions_with_occurrence", "n_in_os_group"])
 		for tup, cts in counts.iteritems():
 			output = list(tup)
 			instances_per_session = round(float(cts["sum"])/instances[tup[PREFIX]], 3)
 			pct_with_occurrence = round(float(cts["count"])/instances[tup[PREFIX]], 3)
-			output.extend([instances_per_session, pct_with_occurrence])
+			output.extend([instances_per_session, pct_with_occurrence, int(instances[tup[PREFIX]])])
 			csvwriter.writerow(output)
 
 if __name__ == '__main__':
