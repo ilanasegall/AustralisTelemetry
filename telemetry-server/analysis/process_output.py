@@ -15,11 +15,14 @@ WINNT,none,bookmarksBarEnabled-False,194609.0,0.5405
 Linux,tour-29,bookmarksBarEnabled-True,165417.0,0.4595
 '''
 
+import re
+
 #position data
 PREFIX=0
 BUCKET=1
 ITEM=2
-COUNT=3
+TYPE=3
+COUNT=4
 
 
 
@@ -36,13 +39,13 @@ def process_output(filecontents, outfile):
 		if line.startswith("ERROR"):
 			continue
 
-		tokens = line.split(",")
-		tokens[COUNT] = tokens[COUNT].split()
-		if tokens[ITEM] == "instances" and tokens[COUNT][0] == "count":
-			instances[tokens[PREFIX]] = float(tokens[COUNT][1])
+		tokens = re.split(',|\s', line)
+		if tokens[ITEM] == "instances" and tokens[TYPE] == "count":
+			instances[tokens[PREFIX]] = float(tokens[COUNT])
+			continue
 
 		#right now, only look at counts with all fields included
-		counts[tuple(tokens[PREFIX:ITEM+1])][tokens[COUNT][0]] = tokens[COUNT][1]
+		counts[tuple(tokens[PREFIX:ITEM+1])][tokens[TYPE]] = tokens[COUNT]
 
 	with open(outfile, "w") as outfile:
 		csvwriter = csv.writer(outfile)
