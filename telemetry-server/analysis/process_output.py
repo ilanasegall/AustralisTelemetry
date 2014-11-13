@@ -15,14 +15,21 @@ WINNT,none,bookmarksBarEnabled-False,194609.0,0.5405
 Linux,tour-29,bookmarksBarEnabled-True,165417.0,0.4595
 '''
 
-import re
+import re, ast, json
+from collections import defaultdict
 
 #position data
 PREFIX=0
 BUCKET=1
 ITEM=2
 TYPE=3
-COUNT=4
+ARRAY=4
+
+def distn(lst):
+	dist = defaultdict(int)
+	for i in lst:
+		dist[i] += 1
+	return dict(dist)
 
 
 
@@ -32,33 +39,46 @@ def process_output(filecontents, outfile):
 	import operator
 	import csv
 
-	counts = defaultdict(lambda: defaultdict(int))
+	counts = defaultdict(list)
 	instances = {}
+	addonbar_num_array = defaultdict(int)
 
 	for line in filecontents:
 		if line.startswith("ERROR"):
 			continue
 
-		tokens = re.split(',|\s', line)
+		tokens = re.split(',|\s', line, 4)
 		if tokens[ITEM] == "instances":
-			instances[tokens[PREFIX]] = float(tokens[COUNT])
+			instances[tokens[PREFIX]] = int(sum(ast.literal_eval(tokens[ARRAY])))
+			continue
+		
+		#special cases for bucketed counting
+		if tokens[ITEM] == "customization_time":
+			sec_array = []
+			for t in ast.literal_eval(tokens[ARRAY]):
+				sec_array.append(int(round(float(t)/1000)))
+			# counts[tuple([tokens[PREFIX], tokens[ITEM]])] = sec_array
 			continue
 
-		#tabs need to be special cased
-		if "visibleTabs" in tokens[ITEM] or "hiddenTabs" in tokens[ITEM]:
+
+		elif tokens[ITEM].startswith("addonToolbars"):
+			name, n = tokens[ITEM].split("-")
+			n = int(n)
+			arr_len = len(ast.literal_eval(tokens[ARRAY]))
+			counts[tuple([tokens[PREFIX],"addonToolbars"])].extend([n for i in range(arr_len)])
 			continue
 
-		#right now, only look at counts with all fields included
-		counts[tuple(tokens[PREFIX:ITEM+1])][tokens[TYPE]] += float(tokens[COUNT])
+		elif "visibleTabs" in tokens[ITEM] or "hiddenTabs" in tokens[ITEM]:
+			continue
+
+		counts[tuple([tokens[PREFIX], tokens[ITEM]])].extend(ast.literal_eval(tokens[ARRAY]))
 
 	with open(outfile, "w") as outfile:
 		csvwriter = csv.writer(outfile)
-		csvwriter.writerow(["sys_info","tour_bucket", "item","instances_per_session","percent_sessions_with_occurrence", "n_in_os_group"])
+		csvwriter.writerow(["sys_info","item","full_counts", "n_in_os_group"])
 		for tup, cts in counts.iteritems():
 			output = list(tup)
-			instances_per_session = round(float(cts["sum"])/instances[tup[PREFIX]], 3)
-			pct_with_occurrence = round(float(cts["count"])/instances[tup[PREFIX]], 3)
-			output.extend([instances_per_session, pct_with_occurrence, int(instances[tup[PREFIX]])])
+			output.extend([json.dumps(distn(cts)), instances[tup[0]]])
 			csvwriter.writerow(output)
 
 if __name__ == '__main__':

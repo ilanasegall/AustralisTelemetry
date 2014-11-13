@@ -137,7 +137,7 @@ def generate_filters(args, output_file):
 def run_mr(filter, output_file, local_only):
 
   args = {
-    "job_script" : "../uitour.py",
+    "job_script" : "../bucketless_uitour.py",
     "input_filter": filter,
     "num_mappers" : 16,
     "num_reducers" : 4,
