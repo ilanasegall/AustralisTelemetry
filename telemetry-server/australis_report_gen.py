@@ -19,10 +19,10 @@ try:
 except ImportError:
     BOTO_AVAILABLE=False
 
-OUTPUT_DIR_BASE = "../analysis/output"
+OUTPUT_DIR_BASE = "../output"
 
 #weeks start at 1
-def get_week_endpoints(week_no, year=2014):
+def get_week_endpoints(week_no, year):
   year_start = datetime(year,1,1).date()
   first_tues = year_start + timedelta(days=((8 - year_start.weekday()) % 7))
 
@@ -41,24 +41,27 @@ def get_week_endpoints(week_no, year=2014):
 
   return (start.strftime("%Y%m%d"), end.strftime("%Y%m%d"))
 
-def get_current_weekno(year=2014):
+def get_last_completed_week():
+  #TODO: special case for beginning of year
+
+  today = datetime.today()
+  year = today.year
   year_start = datetime(year,1,1)
 
   first_tues = year_start + timedelta(days=((8 - year_start.weekday()) % 7))
-  today = datetime.today()
-  return int((today - first_tues).days / 7) + 1
+  return (year, int((today - first_tues).days / 7))
 
-def curr_version(channel):
+def corr_version(channel, date):
   if channel == "nightly":
     channel = "central"
-  today = datetime.today().date()
+  start_date = datetime.today().date()
   releases_site = urlopen("http://latte.ca/cgi-bin/status.cgi")
   releases = json.loads(releases_site.read())
 
   for i,r in enumerate(releases):
-    if datetime.strptime(r["sDate"], "%Y-%m-%d").date() > today:
+    if datetime.strptime(r["sDate"], "%Y-%m-%d").date() > start_date:
       if i == 0:
-        raise Exception("today's date too early for dataset")
+        raise Exception("date too early for dataset")
       return releases[i-1]["data"][channel].split()[1]
   raise Exception("today's date too late for dataset")
 
@@ -66,29 +69,12 @@ def curr_version(channel):
 
 #many fields faked out. keep this way for now.
 def generate_filters(args, output_file):
-    chans = {key: args.__dict__[key] for key in ("nightly", "aurora", "beta", "release")}
-    channels = filter(lambda x: args.__dict__[x] is True, chans)
 
-    version_min = version_max = None
+    start, end = get_week_endpoints(args.week, args.year) 
 
-    #right now, assume always one channel. fix later if needed
-    if args.version == "current":
-      args.version = curr_version(channels[0])
-      version_min = str(args.version) + ".0"
-      version_max = str(args.version) + ".999"
-
-    elif args.version is None:
-      version_min = "0.0"
-      version_max = "999.999"
-
-    else:
-      version_min = str(args.version) + ".0"
-      version_max = str(args.version) + ".999"
-
-
-      
-
-    start, end = get_week_endpoints(args.week)
+    #potentially add more precision later  
+    version_min = str(args.version) + ".0"
+    version_max = str(args.version) + ".999"
 
     fltr = {
     "version": 1,
@@ -103,7 +89,7 @@ def generate_filters(args, output_file):
     },
     {
       "field_name": "appUpdateChannel",
-      "allowed_values": channels
+      "allowed_values": args.channel
     },
     {
       "field_name": "appVersion",
@@ -146,7 +132,7 @@ def run_mr(filter, output_file, local_only):
     "output" : output_file,
     "bucket" : "telemetry-published-v2",
     "local_only" : local_only,
-    "delete_data" : True
+    #"delete_data" : True
   }
 
   if not args["local_only"]:
@@ -169,32 +155,36 @@ def run_mr(filter, output_file, local_only):
   return (exit_code, output_file)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-w", "--week", help="enter week number of 2014 to analyze")
-parser.add_argument("--nightly", action="store_true", help="Use flag to include channel")
-parser.add_argument("--aurora", action="store_true", help="Use flag to include channel")
-parser.add_argument("--beta", action="store_true", help="Use flag to include channel")
-parser.add_argument("--release", action="store_true", help="Use flag to include channel")
-parser.add_argument("-v", "--version", help="enter version")
+parser.add_argument("-w", "--week", type=int, help="enter week number of year to analyze")
+parser.add_argument("-y", "--year", type=int, help="enter year to correspond to week number")
+parser.add_argument("-c", "--channel", help ="enter channel to analyze")
+parser.add_argument("-v", "--version", type=int, help="enter version")
 parser.add_argument("-t", "--tag", help="enter a label to identify the data run")
-parser.add_argument("--local-only", action="store_true", dest = "local_only", help="use flag to run using local data")
+parser.add_argument("--local-only", action="store_true", dest="local_only", help="use flag to run using local data")
+parser.add_argument("--most-recent", action="store_true", dest="most_recent", help="get data for most recent week and year. overrides other date and version options")
+
 
 args = parser.parse_args()
 
 current_dir = sys.path[0]
 
-#change to most recently COMPLETED week <---- 
-#make sure version no correct
-if args.week == "current":
-  args.week = get_current_weekno()
+#TODO: change printed errors to actual raises
+if args.channel not in ["nightly", "aurora", "beta", "release"]:
+  print "ERROR: channel must be one of (nightly, aurora, beta, release)"
 
+#make sure version no correct
+if args.most_recent:
+  (args.year, args.week) = get_last_completed_week()
+  args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
+
+#in future, have "most up to date" version option
+elif not args.week or not args.year or not args.version:
+  print "ERROR: must specify week, year, and version"
+
+
+#must be no larger than single week
 if not args.tag:
-  if args.week != "current":
-    if not args.week:
-      args.tag = "2014"
-    else:
-      args.tag = "2014_" + str(args.week)
-  elif args.week == "current":
-    args.tag = "2014_" + str(get_current_weekno())
+  args.tag = str(args.year) + "_" + str(args.week)
 
 output_dir = "/".join([current_dir,OUTPUT_DIR_BASE,args.tag]) + "/"
 proc = subprocess.Popen(["mkdir","/".join([current_dir,OUTPUT_DIR_BASE,args.tag])])
