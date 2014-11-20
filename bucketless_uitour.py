@@ -35,7 +35,6 @@ def map(k, d, v, cx):
         toolbars = ui["toolbars"] 
         if not "menuBarEnabled" in toolbars: #remove weird incomplete cases
           return
-        cx.write(prefix+ ",none,instances", 1)
         countableEvents = toolbars.get("countableEvents", {})
         feature_measures = {}
         #note: simple swaps in "kept"
@@ -89,6 +88,8 @@ def map(k, d, v, cx):
 
         for event_string,val in bucketless_events.items():
           cx.write(prefix+"," + "NA" + "," + event_string, val)
+
+      cx.write(prefix+ ",none,instances", 1)
 
   except Exception, e:
     print >> sys.stderr, "ERROR:", e
