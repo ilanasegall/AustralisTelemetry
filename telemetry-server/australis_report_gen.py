@@ -54,7 +54,7 @@ def get_last_completed_week():
 def corr_version(channel, date):
   if channel == "nightly":
     channel = "central"
-  start_date = datetime.today().date()
+  start_date = datetime.strptime(date, "%Y%m%d").date()
   releases_site = urlopen("http://latte.ca/cgi-bin/status.cgi")
   releases = json.loads(releases_site.read())
 
@@ -101,7 +101,7 @@ def generate_filters(args, output_file):
     {
       "field_name": "appBuildID",
       "allowed_values": {
-        "min": "20140123004002",
+        "min": "0",
         "max": "99999999999999"
       }
     },
@@ -120,7 +120,7 @@ def generate_filters(args, output_file):
     return output_file
 
 #many of these args can be exposed at the command line. no need for now.
-def run_mr(filter, output_file, local_only):
+def run_mr(filter, output_file, local_only, streaming):
 
   args = {
     "job_script" : "../bucketless_uitour.py",
@@ -132,7 +132,7 @@ def run_mr(filter, output_file, local_only):
     "output" : output_file,
     "bucket" : "telemetry-published-v2",
     "local_only" : local_only,
-    #"delete_data" : True
+    "delete_data" : streaming
   }
 
   if not args["local_only"]:
@@ -162,6 +162,7 @@ parser.add_argument("-v", "--version", type=int, help="enter version")
 parser.add_argument("-t", "--tag", help="enter a label to identify the data run")
 parser.add_argument("--local-only", action="store_true", dest="local_only", help="use flag to run using local data")
 parser.add_argument("--most-recent", action="store_true", dest="most_recent", help="get data for most recent week and year. overrides other date and version options")
+parser.add_argument("--streaming", action="store_true", dest="streaming", help="use flag to delete files as they're read for more efficient processing")
 
 
 args = parser.parse_args()
@@ -184,12 +185,12 @@ elif not args.week or not args.year or not args.version:
 
 #must be no larger than single week
 if not args.tag:
-  args.tag = str(args.year) + "_" + str(args.week)
+  args.tag = str(args.year) + "_" + str(args.week) + "_" + str(args.channel)
 
 output_dir = "/".join([current_dir,OUTPUT_DIR_BASE,args.tag]) + "/"
 proc = subprocess.Popen(["mkdir","/".join([current_dir,OUTPUT_DIR_BASE,args.tag])])
 proc.wait()
 
 filterfile = generate_filters(args, output_dir + "filter.json")
-error, mr_file = run_mr(filterfile, output_dir + "mr_output.csv", args.local_only)
+error, mr_file = run_mr(filterfile, output_dir + "mr_output.csv", args.local_only, args.streaming)
 process_output(open(mr_file), output_dir + "out.csv")
