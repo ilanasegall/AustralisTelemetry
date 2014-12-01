@@ -158,7 +158,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-w", "--week", type=int, help="enter week number of year to analyze")
 parser.add_argument("-y", "--year", type=int, help="enter year to correspond to week number")
 parser.add_argument("-c", "--channel", help ="enter channel to analyze")
-parser.add_argument("-v", "--version", type=int, help="enter version")
+parser.add_argument("-v", "--version", help="enter version")
 parser.add_argument("-t", "--tag", help="enter a label to identify the data run")
 parser.add_argument("--local-only", action="store_true", dest="local_only", help="use flag to run using local data")
 parser.add_argument("--most-recent", action="store_true", dest="most_recent", help="get data for most recent week and year. overrides other date and version options")
@@ -173,14 +173,14 @@ current_dir = sys.path[0]
 if args.channel not in ["nightly", "aurora", "beta", "release"]:
   print "ERROR: channel must be one of (nightly, aurora, beta, release)"
 
-#make sure version no correct
 if args.most_recent:
   (args.year, args.week) = get_last_completed_week()
   args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
 
-#in future, have "most up to date" version option
 elif not args.week or not args.year or not args.version:
   print "ERROR: must specify week, year, and version"
+  if args.version == "current":
+    args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
 
 
 #must be no larger than single week
