@@ -32,11 +32,9 @@ def map(k, d, v, cx):
 
     tour_seen = "none"
 
+    toolbars = ui["toolbars"] 
     if not "menuBarEnabled" in toolbars: #remove weird incomplete cases
       return
-
-
-    toolbars = ui["toolbars"] 
     countableEvents = toolbars.get("countableEvents", {})
     feature_measures = {}
     #note: simple swaps in "kept"
@@ -97,8 +95,8 @@ def map(k, d, v, cx):
 
     cx.write(prefix+ ",none,instances", 1)
     for tup in payload_out:
-      a,b,c = tup
-      cx.write(a,b,c)
+      a,b = tup
+      cx.write(a,b)
 
   except Exception, e:
     print >> sys.stderr, "ERROR:", e
