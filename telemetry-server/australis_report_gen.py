@@ -177,8 +177,9 @@ if args.most_recent:
   (args.year, args.week) = get_last_completed_week()
   args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
 
-elif not args.week or not args.year or not args.version:
-  print "ERROR: must specify week, year, and version"
+else:
+  if not args.week or not args.year or not args.version:
+    print "ERROR: must specify week, year, and version"
   if args.version == "current":
     args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
 
