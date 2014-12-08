@@ -154,6 +154,8 @@ def run_mr(filter, output_file, local_only, streaming):
   print "All done in %.2fs" % (duration)
   return (exit_code, output_file)
 
+
+#TODO: add ability to specify buildid
 parser = argparse.ArgumentParser()
 parser.add_argument("-w", "--week", type=int, help="enter week number of year to analyze")
 parser.add_argument("-y", "--year", type=int, help="enter year to correspond to week number")
@@ -183,10 +185,10 @@ else:
   if args.version == "current":
     args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
 
-
+start_date = get_week_endpoints(args.week, args.year)[0]
 #must be no larger than single week
 if not args.tag:
-  args.tag = str(args.year) + "_" + str(args.week) + "_" + str(args.channel)
+  args.tag = "week_of_" + start_date + "_" + str(args.channel)
 
 output_dir = "/".join([current_dir,OUTPUT_DIR_BASE,args.tag]) + "/"
 proc = subprocess.Popen(["mkdir","/".join([current_dir,OUTPUT_DIR_BASE,args.tag])])
@@ -194,4 +196,5 @@ proc.wait()
 
 filterfile = generate_filters(args, output_dir + "filter.json")
 error, mr_file = run_mr(filterfile, output_dir + "mr_output.csv", args.local_only, args.streaming)
-process_output(open(mr_file), output_dir + "out.csv")
+print output_dir + "../" + args.tag + ".csv"
+process_output(open(mr_file), output_dir + "../" + args.tag + ".csv")
