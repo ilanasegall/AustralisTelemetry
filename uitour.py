@@ -31,6 +31,9 @@ def map(k, d, v, cx):
 
     tour_seen = "none"
 
+
+    #make sure everything kosher before writing ANYTHING
+
     if "toolbars" in ui:
         toolbars = ui["toolbars"] 
         if not "menuBarEnabled" in toolbars: #remove weird incomplete cases
@@ -95,5 +98,6 @@ def reduce(k, v, cx):
     for i in set(v):
       cx.write(k, i)
     return
-  cx.write(k + " count", len(v))
-  cx.write(k + " sum", sum(pymap(float,v)))
+  cx.write(k + " array", v)
+  # cx.write(k + " count", len(v))
+  # cx.write(k + " sum", sum(pymap(float,v)))

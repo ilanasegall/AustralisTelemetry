@@ -86,3 +86,6 @@ if __name__ == '__main__':
 	import sys
 
 	process_output(sys.stdout)
+
+#number of windows as distn
+#total number of tabs
