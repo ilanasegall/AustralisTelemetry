@@ -3,16 +3,14 @@ post-process what comes out of m/r job
 
 usage: cat final_data/my_mapreduce_results_pre.out | python process_output.py
 
-input: output from uitour, ex:
-Linux,none,features_kept-bookmarks-menu-button,sum	2.0
-WINNT,bucket_UITour|australis-tour-aurora-29.0a2,click-builtin-item-preferences-button-left,count	1
+input: output from bucketless_uitour (NOT uitour!!!), ex:
+Linux,features_kept-bookmarks-menu-button,array	[2, 3]
+WINNT,click-builtin-item-preferences-button-left,array	[1]
 
 output: csv w/ header listing
-osinfo,item,instances per session,percentage of sessions with occurrence
+osinfo,item,distribution,n in os
 
-ex:
-WINNT,none,bookmarksBarEnabled-False,194609.0,0.5405
-Linux,tour-29,bookmarksBarEnabled-True,165417.0,0.4595
+***we are now guaranteed to have unique (prefix,item) output from bucketless_uitour. No more storing everything in memory! huzzah!
 '''
 
 import re, ast, json
@@ -20,10 +18,10 @@ from collections import defaultdict
 
 #position data
 PREFIX=0
-BUCKET=1
-ITEM=2
-TYPE=3
-ARRAY=4
+ITEM=1
+TYPE=2
+ARRAY=3
+
 
 def distn(lst):
 	dist = defaultdict(int)
@@ -33,59 +31,71 @@ def distn(lst):
 
 
 
-def process_output(filecontents, outfile):
+def process_output(infile, outfile):
 	from collections import defaultdict
 	from pprint import pprint as pp
 	import operator
 	import csv
 
-	counts = defaultdict(list)
 	instances = {}
-	addonbar_num_array = defaultdict(int)
+	addonbar_counts = defaultdict(list)
 
+	#iterate through file once to get os counts so that we append these to rows in final output
+	
+	filecontents = open(infile)
 	for line in filecontents:
-		if line.startswith("ERROR"):
-			continue
-
-		tokens = re.split(',|\s', line, 4)
+		tokens = re.split(',|\s', line, 3)
 		if tokens[ITEM] == "instances":
 			instances[tokens[PREFIX]] = int(sum(ast.literal_eval(tokens[ARRAY])))
-			continue
-		
-		#special cases for bucketed counting
-		if tokens[ITEM] == "customization_time":
-			sec_array = []
-			for t in ast.literal_eval(tokens[ARRAY]):
-				sec_array.append(int(round(float(t)/1000)))
-			# counts[tuple([tokens[PREFIX], tokens[ITEM]])] = sec_array
-			continue
 
 
+	#we have to precomput these as well. in the future, maybe detect strings like this in the m/r step
 		elif tokens[ITEM].startswith("addonToolbars"):
 			name, n = tokens[ITEM].split("-")
 			n = int(n)
 			arr_len = len(ast.literal_eval(tokens[ARRAY]))
-			counts[tuple([tokens[PREFIX],"addonToolbars"])].extend([n for i in range(arr_len)])
-			continue
+			addonbar_counts[tuple([tokens[PREFIX],"addonToolbars"])].extend([n for i in range(arr_len)])
 
-		elif "visibleTabs" in tokens[ITEM] or "hiddenTabs" in tokens[ITEM]:
-			continue
-
-		counts[tuple([tokens[PREFIX], tokens[ITEM]])].extend(ast.literal_eval(tokens[ARRAY]))
+	filecontents.close()
+		
 
 	with open(outfile, "w") as outfile:
 		csvwriter = csv.writer(outfile)
+		filecontents = open(infile) #restart stream
+
 		csvwriter.writerow(["sys_info","item","full_counts", "n_in_os_group"])
-		for tup, cts in counts.iteritems():
-			output = list(tup)
-			output.extend([json.dumps(distn(cts)), instances[tup[0]]])
-			csvwriter.writerow(output)
 
-if __name__ == '__main__':
-	import fileinput
-	import sys
+		for line in filecontents:
+			if line.startswith("ERROR"):
+				continue
 
-	process_output(sys.stdout)
+			tokens = re.split(',|\s', line, 3)
+			
+			if tokens[ITEM] == "instances": #we've gotten these already
+				continue
+
+			elif "visibleTabs" in tokens[ITEM] or "hiddenTabs" in tokens[ITEM]: #we might get these later
+				continue
+
+			elif tokens[ITEM].startswith("addonToolbars"): #gotten these already
+				continue
+
+			tokens[ARRAY] = ast.literal_eval(tokens[ARRAY])
+
+			if tokens[ITEM] == "customization_time":
+				sec_array = [] #round to the second
+				for t in tokens[ARRAY]:
+					sec_array.append(int(round(float(t)/1000)))
+				csvwriter.writerow([tokens[PREFIX], tokens[ITEM], json.dumps(distn(sec_array)), instances[tokens[PREFIX]]])
+
+			else:
+				csvwriter.writerow([tokens[PREFIX], tokens[ITEM], json.dumps(distn(tokens[ARRAY])), instances[tokens[PREFIX]]])
+
+			#now take care of addonbars calculated above
+		
+
+		for tup, cts in addonbar_counts.iteritems():
+			csvwriter.writerow(list(tup) + [json.dumps(distn(cts)), instances[tup[0]]])
 
 #number of windows as distn
 #total number of tabs

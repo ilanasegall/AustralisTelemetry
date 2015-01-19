@@ -46,14 +46,14 @@ def map(k, d, v, cx):
     if "UITour" in ui:
       for tour in ui["UITour"]["seenPageIDs"]:
         tour_seen = tour
-        payload_out.append((prefix + "," + tour + "," + "seenPage-" + tour, 1))
+        payload_out.append((prefix + "," + "seenPage-" + tour, 1))
         #TODO: error checking on more than one tour
 
     for k,v in toolbars.iteritems():
       if k not in ["defaultKept", "defaultMoved", "nondefaultAdded", "defaultRemoved", "countableEvents", "durations"]:
         v = str(v)
         v = v.replace(",", " ") #remove commas in the tab arrays that will mess us up later
-        payload_out.append((prefix + "," + tour_seen + ","+ k + "-" + str(v), 1))
+        payload_out.append((prefix + ","+ k + "-" + str(v), 1))
 
     bucketDurations = defaultdict(list)
     durations = toolbars.get("durations",{}).get("customization",[])
@@ -70,14 +70,14 @@ def map(k, d, v, cx):
     for d,l in bucketDurations.items():
         bucket = "none" if d == "__DEFAULT__" else d
         for i in l:
-          payload_out.append((prefix + "," + bucket + "," + "customization_time", i))
+          payload_out.append((prefix + ","+ "customization_time", i))
 
     #record the locations and movement of the customization items
     #write out entire set for a user(dist), 
     #and also each individual item
     for e,v in feature_measures.items():
         for item in v:
-          payload_out.append((prefix + "," + tour_seen + "," + e+"-"+item, 1))
+          payload_out.append((prefix + "," + e+"-"+item, 1))
 
     #this will break pre-Australis
     bucketless_events = defaultdict(int)
@@ -87,16 +87,16 @@ def map(k, d, v, cx):
 
 
     for event_string,val in bucketless_events.items():
-      payload_out.append((prefix+"," + "NA" + "," + event_string, val))
+      payload_out.append((prefix+ "," + event_string, val))
 
 
 
     #We haven't errored out! Now we can write everything.
 
-    cx.write(prefix+ ",none,instances", 1)
+    cx.write(prefix+ ",instances", 1)
     for tup in payload_out:
       a,b = tup
-      cx.write(a,b)
+      cx.write(a,b)    
 
   except Exception, e:
     print >> sys.stderr, "ERROR:", e
