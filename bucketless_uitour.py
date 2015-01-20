@@ -108,6 +108,9 @@ def reduce(k, v, cx):
     for i in set(v):
       cx.write(k, i)
     return
-  cx.write(k + " array", v)
+  try:
+    cx.write(k + " array", v)
+  except Exception, e:
+    print >> sys.stderr, "ERROR:", e
   # cx.write(k + " count", len(v))
   # cx.write(k + " sum", sum(pymap(float,v)))
