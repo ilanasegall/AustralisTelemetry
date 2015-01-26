@@ -70,7 +70,7 @@ def map(k, d, v, cx):
     for d,l in bucketDurations.items():
         bucket = "none" if d == "__DEFAULT__" else d
         for i in l:
-          payload_out.append((prefix + ","+ "customization_time", i))
+          payload_out.append((prefix + ","+ "customization_time", int(round(float(i)/1000))))
 
     #record the locations and movement of the customization items
     #write out entire set for a user(dist), 
@@ -103,14 +103,18 @@ def map(k, d, v, cx):
     print >> sys.stderr, traceback.format_exc()
     cx.write("ERROR:", str(e))
 
+def distn(lst):
+  dist = defaultdict(int)
+  for i in lst:
+    dist[i] += 1
+  return dict(dist)
+
 def reduce(k, v, cx):
   if k == "JSON PARSE ERROR:":
     for i in set(v):
       cx.write(k, i)
     return
   try:
-    cx.write(k + " array", v)
+    cx.write(k, json.dumps(distn(v)))
   except Exception, e:
     print >> sys.stderr, "ERROR:", e
-  # cx.write(k + " count", len(v))
-  # cx.write(k + " sum", sum(pymap(float,v)))

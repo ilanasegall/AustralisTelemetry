@@ -197,4 +197,4 @@ proc.wait()
 filterfile = generate_filters(args, output_dir + "filter.json")
 error, mr_file = run_mr(filterfile, output_dir + "mr_output.csv", args.local_only, args.streaming)
 print output_dir + "../" + args.tag + ".csv"
-process_output(mr_file, output_dir + "../" + args.tag + ".csv")
+process_output(output_dir + "mr_output.csv", output_dir + "../" + args.tag + ".csv")

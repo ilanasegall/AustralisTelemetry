@@ -16,21 +16,6 @@ osinfo,item,distribution,n in os
 import re, ast, json
 from collections import defaultdict
 
-#position data
-PREFIX=0
-ITEM=1
-TYPE=2
-ARRAY=3
-
-
-def distn(lst):
-	dist = defaultdict(int)
-	for i in lst:
-		dist[i] += 1
-	return dict(dist)
-
-
-
 def process_output(infile, outfile):
 	from collections import defaultdict
 	from pprint import pprint as pp
@@ -38,23 +23,23 @@ def process_output(infile, outfile):
 	import csv
 
 	instances = {}
-	addonbar_counts = defaultdict(list)
+	addonbar_counts = defaultdict(dict)
 
 	#iterate through file once to get os counts so that we append these to rows in final output
 	
 	filecontents = open(infile)
 	for line in filecontents:
-		tokens = re.split(',|\s', line, 3)
-		if tokens[ITEM] == "instances":
-			instances[tokens[PREFIX]] = int(sum(ast.literal_eval(tokens[ARRAY])))
+		tokens, distn = line.split('\t',1)
+		distn = json.loads(distn) 
+		prefix, val = tokens.split(',')
+		if val == "instances":
+			instances[prefix] = distn['1']
 
 
-	#we have to precomput these as well. in the future, maybe detect strings like this in the m/r step
-		elif tokens[ITEM].startswith("addonToolbars"):
-			name, n = tokens[ITEM].split("-")
-			n = int(n)
-			arr_len = len(ast.literal_eval(tokens[ARRAY]))
-			addonbar_counts[tuple([tokens[PREFIX],"addonToolbars"])].extend([n for i in range(arr_len)])
+	#we have to precompute these as well. in the future, maybe detect strings like this in the m/r step
+		elif val.startswith("addonToolbars"):
+			name, n = val.split("-")
+			addonbar_counts[prefix][n] = distn["1"]
 
 	filecontents.close()
 		
@@ -66,36 +51,31 @@ def process_output(infile, outfile):
 		csvwriter.writerow(["sys_info","item","full_counts", "n_in_os_group"])
 
 		for line in filecontents:
+
+			
 			if line.startswith("ERROR"):
 				continue
 
-			tokens = re.split(',|\s', line, 3)
+			tokens, distn = line.split('\t',1)
+			distn = json.loads(distn) 
+			prefix, val = tokens.split(',')
 			
-			if tokens[ITEM] == "instances": #we've gotten these already
+			if val == "instances": #we've gotten these already
 				continue
 
-			elif "visibleTabs" in tokens[ITEM] or "hiddenTabs" in tokens[ITEM]: #we might get these later
+			elif "visibleTabs" in val or "hiddenTabs" in val: #we might get these later
 				continue
 
-			elif tokens[ITEM].startswith("addonToolbars"): #gotten these already
+			elif val.startswith("addonToolbars"): #gotten these already
 				continue
-
-			tokens[ARRAY] = ast.literal_eval(tokens[ARRAY])
-
-			if tokens[ITEM] == "customization_time":
-				sec_array = [] #round to the second
-				for t in tokens[ARRAY]:
-					sec_array.append(int(round(float(t)/1000)))
-				csvwriter.writerow([tokens[PREFIX], tokens[ITEM], json.dumps(distn(sec_array)), instances[tokens[PREFIX]]])
 
 			else:
-				csvwriter.writerow([tokens[PREFIX], tokens[ITEM], json.dumps(distn(tokens[ARRAY])), instances[tokens[PREFIX]]])
+				csvwriter.writerow([prefix, val, json.dumps(distn), instances[prefix]])
 
-			#now take care of addonbars calculated above
-		
-
-		for tup, cts in addonbar_counts.iteritems():
-			csvwriter.writerow(list(tup) + [json.dumps(distn(cts)), instances[tup[0]]])
+		#now take care of addonbars calculated above
+	
+		for prefix in addonbar_counts:
+			csvwriter.writerow([prefix, "addonToolbars", json.dumps(distn), instances[prefix]])
 
 #number of windows as distn
 #total number of tabs
