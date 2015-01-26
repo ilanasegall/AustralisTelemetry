@@ -76,7 +76,7 @@ def process_output(infile, outfile):
 		#now take care of addonbars calculated above
 	
 		for prefix in addonbar_counts:
-			csvwriter.writerow([prefix, "addonToolbars", json.dumps(distn), instances[prefix]])
+			csvwriter.writerow([prefix, "addonToolbars", json.dumps(addonbar_counts[prefix]), instances[prefix]])
 
 #number of windows as distn
 #total number of tabs
