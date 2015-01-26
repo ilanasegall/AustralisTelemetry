@@ -29,6 +29,9 @@ def process_output(infile, outfile):
 	
 	filecontents = open(infile)
 	for line in filecontents:
+		if line.startswith("ERROR"):
+			continue
+
 		tokens, distn = line.split('\t',1)
 		distn = json.loads(distn) 
 		prefix, val = tokens.split(',')
@@ -51,8 +54,6 @@ def process_output(infile, outfile):
 		csvwriter.writerow(["sys_info","item","full_counts", "n_in_os_group"])
 
 		for line in filecontents:
-
-			
 			if line.startswith("ERROR"):
 				continue
 
