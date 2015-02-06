@@ -34,7 +34,7 @@ def process_output(infile, outfile):
 
 		tokens, distn = line.split('\t',1)
 		distn = json.loads(distn) 
-		prefix, val = tokens.split(',')
+		prefix, val = tokens.split(',',1)
 		if val == "instances":
 			instances[prefix] = distn['1']
 
@@ -59,7 +59,7 @@ def process_output(infile, outfile):
 
 			tokens, distn = line.split('\t',1)
 			distn = json.loads(distn) 
-			prefix, val = tokens.split(',')
+			prefix, val = tokens.split(',',1)
 			
 			if val == "instances": #we've gotten these already
 				continue
