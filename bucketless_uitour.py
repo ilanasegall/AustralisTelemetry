@@ -2,7 +2,6 @@ from collections import defaultdict
 import json
 import sys
 import traceback
-import unicodecsv
 from cStringIO import StringIO
 import os
 
@@ -31,8 +30,6 @@ def map(k, d, v, cx):
     ui = s["UITelemetry"]
     countableEventBuckets = []
     customizeBuckets = []
-
-    print j["clientID"]
 
     prefix = sysinfo["OS"]
     if BYSESSION:
