@@ -11,6 +11,7 @@ from analysis.process_output import process_output
 from datetime import datetime, timedelta
 from urllib import urlopen
 import subprocess
+import os
 
 from mapreduce.job import Job
 try:
@@ -165,11 +166,12 @@ parser.add_argument("-t", "--tag", help="enter a label to identify the data run"
 parser.add_argument("--local-only", action="store_true", dest="local_only", help="use flag to run using local data")
 parser.add_argument("--most-recent", action="store_true", dest="most_recent", help="get data for most recent week and year. overrides other date and version options")
 parser.add_argument("--streaming", action="store_true", dest="streaming", help="use flag to delete files as they're read for more efficient processing")
-
+parser.add_argument("--by-session", action="store_true", dest="by_session", help="use flag to indicate using a key for data by user/session")
 
 args = parser.parse_args()
 
 current_dir = sys.path[0]
+os.environ["BYSESSION"] = str(args.by_session)
 
 #TODO: change printed errors to actual raises
 if args.channel not in ["nightly", "aurora", "beta", "release"]:
@@ -197,4 +199,5 @@ proc.wait()
 filterfile = generate_filters(args, output_dir + "filter.json")
 error, mr_file = run_mr(filterfile, output_dir + "mr_output.csv", args.local_only, args.streaming)
 print output_dir + "../" + args.tag + ".csv"
-process_output(output_dir + "mr_output.csv", output_dir + "../" + args.tag + ".csv")
+if not args.by_session:
+  process_output(output_dir + "mr_output.csv", output_dir + "../" + args.tag + ".csv")

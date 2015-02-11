@@ -2,8 +2,12 @@ from collections import defaultdict
 import json
 import sys
 import traceback
+import unicodecsv
+from cStringIO import StringIO
+import os
 
 pymap = map
+BYSESSION = bool(os.environ["BYSESSION"])
 
 def enum_paths(dct, path=[]):
   if not hasattr(dct, 'items'):
@@ -28,7 +32,11 @@ def map(k, d, v, cx):
     countableEventBuckets = []
     customizeBuckets = []
 
+    print j["clientID"]
+
     prefix = sysinfo["OS"]
+    if BYSESSION:
+      prefix +=  "," + j["clientID"]
 
     tour_seen = "none"
 
@@ -51,9 +59,12 @@ def map(k, d, v, cx):
 
     for k,v in toolbars.iteritems():
       if k not in ["defaultKept", "defaultMoved", "nondefaultAdded", "defaultRemoved", "countableEvents", "durations"]:
-        v = str(v)
+        if not isinstance(v, unicode):
+          v = str(v)
+        else:
+          v = v.encode("utf-8")
         v = v.replace(",", " ") #remove commas in the tab arrays that will mess us up later
-        payload_out.append((prefix + ","+ k + "-" + str(v), 1))
+        payload_out.append((prefix.encode('utf-8') + ","+ k.encode('utf-8') + "-" + v, 1))
 
     bucketDurations = defaultdict(list)
     durations = toolbars.get("durations",{}).get("customization",[])
