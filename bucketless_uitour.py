@@ -7,6 +7,7 @@ import os
 
 pymap = map
 BYSESSION =True if "BYSESSION" in os.environ else False
+#if bysession is true, we only want to care about search data. ow we're going to crash big time.
 
 def enum_paths(dct, path=[]):
   if not hasattr(dct, 'items'):
@@ -27,6 +28,10 @@ def map(k, d, v, cx):
     if not "UITelemetry" in s:
       return
     sysinfo = j["info"]
+    locale = sysinfo["locale"]
+    if BYSESSION and locale != "en-US":
+      return #very hard to look at default search engines, etc, for non en-us. remove later.
+
     ui = s["UITelemetry"]
     countableEventBuckets = []
     customizeBuckets = []
@@ -123,6 +128,8 @@ def reduce(k, v, cx):
       cx.write(k, i)
     return
   try:
+    if BYSESSION and "search" not in k:
+      return #too much info right now. we'll run out of memory
     cx.write(k, json.dumps(distn(v)))
   except Exception, e:
     print >> sys.stderr, "ERROR:", e

@@ -193,8 +193,11 @@ start_date = get_week_endpoints(args.week, args.year)[0]
 if not args.tag:
   args.tag = "week_of_" + start_date + "_" + str(args.channel)
 
-output_dir = "/".join([current_dir,OUTPUT_DIR_BASE,args.tag]) + "/"
-proc = subprocess.Popen(["mkdir","/".join([current_dir,OUTPUT_DIR_BASE,args.tag])])
+output_dir = "/".join([current_dir,OUTPUT_DIR_BASE,args.tag])
+if "BYSESSION" in os.environ:
+  output_dir += "_sessionwise"
+output_dir += "/"
+proc = subprocess.Popen(["mkdir",output_dir])
 proc.wait()
 
 filterfile = generate_filters(args, output_dir + "filter.json")
