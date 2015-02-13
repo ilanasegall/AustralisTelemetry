@@ -172,7 +172,7 @@ args = parser.parse_args()
 
 current_dir = sys.path[0]
 if args.by_session:
-  os.environ["BYSESSION"] = 1
+  os.environ["BYSESSION"] = "1"
 
 #TODO: change printed errors to actual raises
 if args.channel not in ["nightly", "aurora", "beta", "release"]:

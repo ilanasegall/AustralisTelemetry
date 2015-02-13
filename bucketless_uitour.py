@@ -6,7 +6,7 @@ from cStringIO import StringIO
 import os
 
 pymap = map
-BYSESSION = bool(os.environ["BYSESSION"])
+BYSESSION =True if "BYSESSION" in os.environ else False
 
 def enum_paths(dct, path=[]):
   if not hasattr(dct, 'items'):
