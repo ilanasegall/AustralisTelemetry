@@ -38,7 +38,9 @@ def map(k, d, v, cx):
 
     prefix = sysinfo["OS"]
     if BYSESSION:
-      prefix +=  "," + j["clientID"]
+      prefix +=  "," + j["clientID"]   
+
+    s_prefix = prefix.encode('utf-8')   
 
     tour_seen = "none"
 
@@ -56,17 +58,17 @@ def map(k, d, v, cx):
     if "UITour" in ui:
       for tour in ui["UITour"]["seenPageIDs"]:
         tour_seen = tour
-        payload_out.append((prefix + "," + "seenPage-" + tour, 1))
+        payload_out.append((s_prefix + "," + "seenPage-" + tour.encode('utf-8'), 1))
         #TODO: error checking on more than one tour
 
     for k,v in toolbars.iteritems():
       if k not in ["defaultKept", "defaultMoved", "nondefaultAdded", "defaultRemoved", "countableEvents", "durations"]:
         if not isinstance(v, unicode):
-          v = str(v)
+          str_v = str(v)
         else:
-          v = v.encode("utf-8")
-        v = v.replace(",", " ") #remove commas in the tab arrays that will mess us up later
-        payload_out.append((prefix.encode('utf-8') + ","+ k.encode('utf-8') + "-" + v, 1))
+          str_v = v.encode("utf-8")
+        str_v = str_v.replace(",", " ") #remove commas in the tab arrays that will mess us up later
+        payload_out.append((s_prefix + ","+ k.encode('utf-8') + "-" + str_v, 1))
 
     bucketDurations = defaultdict(list)
     durations = toolbars.get("durations",{}).get("customization",[])
@@ -83,14 +85,14 @@ def map(k, d, v, cx):
     for d,l in bucketDurations.items():
         bucket = "none" if d == "__DEFAULT__" else d
         for i in l:
-          payload_out.append((prefix + ","+ "customization_time", int(round(float(i)/1000))))
+          payload_out.append((s_prefix + ","+ "customization_time", int(round(float(i)/1000))))
 
     #record the locations and movement of the customization items
     #write out entire set for a user(dist), 
     #and also each individual item
     for e,v in feature_measures.items():
         for item in v:
-          payload_out.append((prefix + "," + e+"-"+item, 1))
+          payload_out.append((s_prefix + "," + e+"-"+item.encode('utf-8'), 1))
 
     #this will break pre-Australis
     bucketless_events = defaultdict(int)
@@ -100,7 +102,7 @@ def map(k, d, v, cx):
 
 
     for event_string,val in bucketless_events.items():
-      payload_out.append((prefix+ "," + event_string, val))
+      payload_out.append((s_prefix + "," + event_string.encode('utf-8'), val))
 
 
 
