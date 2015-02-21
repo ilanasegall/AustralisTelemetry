@@ -68,7 +68,7 @@ def map(k, d, v, cx):
         else:
           str_v = v.encode("utf-8")
         str_v = str_v.replace(",", " ") #remove commas in the tab arrays that will mess us up later
-        payload_out.append((s_prefix + ","+ k.encode('utf-8') + "-" + str_v, 1))
+        payload_out.append((s_prefix + ","+ k.encode('utf-8') + "-" + str_v.strip(), 1)) #strip() because searchengine names sometimes have crap attached
 
     bucketDurations = defaultdict(list)
     durations = toolbars.get("durations",{}).get("customization",[])
