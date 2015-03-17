@@ -53,6 +53,7 @@ def map(k, d, v, cx):
 
     if "toolbars" not in ui:
       logging.warning("no toolbars entry")
+      return
     toolbars = ui["toolbars"] 
     if not "menuBarEnabled" in toolbars: #remove weird incomplete cases
       return
