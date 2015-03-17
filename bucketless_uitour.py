@@ -4,10 +4,14 @@ import sys
 import traceback
 from cStringIO import StringIO
 import os
+import logging
+
+logging.basicConfig(filename=os.environ["OUTPUTDIR"]+'warning.log',level=logging.DEBUG)
 
 pymap = map
 BYSESSION =True if "BYSESSION" in os.environ else False
 #if bysession is true, we only want to care about search data. ow we're going to crash big time.
+
 
 def enum_paths(dct, path=[]):
   if not hasattr(dct, 'items'):
@@ -38,12 +42,17 @@ def map(k, d, v, cx):
 
     prefix = sysinfo["OS"]
     if BYSESSION:
+      if not "clientID" in j:
+        logging.warning("no clientID")
+        return
       prefix +=  "," + j["clientID"]   
 
     s_prefix = prefix.encode('utf-8')   
 
     tour_seen = "none"
 
+    if "toolbars" not in ui:
+      logging.warning("no toolbars entry")
     toolbars = ui["toolbars"] 
     if not "menuBarEnabled" in toolbars: #remove weird incomplete cases
       return
