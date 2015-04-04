@@ -140,7 +140,7 @@ def reduce(k, v, cx):
       cx.write(k, i)
     return
   try:
-    if BYSESSION and "search" not in k:
+    if BYSESSION and "search" not in k.lower():
       return #too much info right now. we'll run out of memory
     cx.write(k, json.dumps(distn(v)))
   except Exception, e:
