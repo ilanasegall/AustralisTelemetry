@@ -1,4 +1,14 @@
 #!/usr/bin/python
+import ssl
+from functools import wraps
+def sslwrap(func):
+    @wraps(func)
+    def bar(*args, **kw):
+        kw['ssl_version'] = ssl.PROTOCOL_TLSv1
+        return func(*args, **kw)
+    return bar
+
+ssl.wrap_socket = sslwrap(ssl.wrap_socket)
 
 import argparse
 import simplejson as json
@@ -20,7 +30,51 @@ try:
 except ImportError:
     BOTO_AVAILABLE=False
 
-OUTPUT_DIR_BASE = "../output"
+class MRRunner:
+
+  def __init__(self, args, output_location="../output"):
+    self.args = args
+    self.output_location = output_location
+
+  def launch(self):
+    args = self.args #horribly retrofitting everything as a class
+    current_dir = sys.path[0]
+    if args.by_session:
+      os.environ["BYSESSION"] = "1"
+
+    #TODO: change printed errors to actual raises
+    if args.channel not in ["nightly", "aurora", "beta", "release"]:
+      print "ERROR: channel must be one of (nightly, aurora, beta, release)"
+
+    if args.most_recent:
+      (args.year, args.week) = get_last_completed_week()
+      args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
+
+    else:
+      if not args.week or not args.year or not args.version:
+        print "ERROR: must specify week, year, and version"
+      if args.version == "current":
+        args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
+
+    start_date = get_week_endpoints(args.week, args.year)[0]
+    #must be no larger than single week
+    if not args.tag:
+      args.tag = "week_of_" + start_date + "_" + str(args.channel)
+
+    output_dir = "/".join([current_dir,self.output_location,args.tag])
+    if args.by_session:
+      output_dir += "_sessionwise"
+    output_dir += "/"
+    proc = subprocess.Popen(["mkdir",output_dir])
+    proc.wait()
+
+    os.environ["OUTPUTDIR"] = output_dir
+
+    filterfile = generate_filters(args, output_dir + "filter.json")
+    error, mr_file = run_mr(filterfile, output_dir + "mr_output.csv", args.local_only, args.streaming)
+    print output_dir + "../" + args.tag + ".csv"
+    if not args.by_session:
+      process_output(output_dir + "mr_output.csv", output_dir + "../" + args.tag + ".csv")
 
 #weeks start at 1
 def get_week_endpoints(week_no, year):
@@ -155,61 +209,24 @@ def run_mr(filter, output_file, local_only, streaming):
   print "All done in %.2fs" % (duration)
   return (exit_code, output_file)
 
-def test_against_known(known, args):
-  print "here"
-
 def main():
-  #TODO: add ability to specify buildid
-  parser = argparse.ArgumentParser()
-  parser.add_argument("-w", "--week", type=int, help="enter week number of year to analyze")
-  parser.add_argument("-y", "--year", type=int, help="enter year to correspond to week number")
-  parser.add_argument("-c", "--channel", help ="enter channel to analyze")
-  parser.add_argument("-v", "--version", help="enter version")
-  parser.add_argument("-t", "--tag", help="enter a label to identify the data run")
-  parser.add_argument("--local-only", action="store_true", dest="local_only", help="use flag to run using local data")
-  parser.add_argument("--most-recent", action="store_true", dest="most_recent", help="get data for most recent week and year. overrides other date and version options")
-  parser.add_argument("--streaming", action="store_true", dest="streaming", help="use flag to delete files as they're read for more efficient processing")
-  parser.add_argument("--by-session", action="store_true", dest="by_session", help="use flag to indicate using a key for data by user/session")
+    #TODO: add ability to specify buildid
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-w", "--week", type=int, help="enter week number of year to analyze")
+    parser.add_argument("-y", "--year", type=int, help="enter year to correspond to week number")
+    parser.add_argument("-c", "--channel", help ="enter channel to analyze")
+    parser.add_argument("-v", "--version", help="enter version")
+    parser.add_argument("-t", "--tag", help="enter a label to identify the data run")
+    parser.add_argument("--local-only", action="store_true", dest="local_only", help="use flag to run using local data")
+    parser.add_argument("--most-recent", action="store_true", dest="most_recent", help="get data for most recent week and year. overrides other date and version options")
+    parser.add_argument("--streaming", action="store_true", dest="streaming", help="use flag to delete files as they're read for more efficient processing")
+    parser.add_argument("--by-session", action="store_true", dest="by_session", help="use flag to indicate using a key for data by user/session")
 
-  args = parser.parse_args()
+    args = parser.parse_args()
 
-  current_dir = sys.path[0]
-  if args.by_session:
-    os.environ["BYSESSION"] = "1"
+    job = MRRunner(args)
+    job.launch()
 
-  #TODO: change printed errors to actual raises
-  if args.channel not in ["nightly", "aurora", "beta", "release"]:
-    print "ERROR: channel must be one of (nightly, aurora, beta, release)"
-
-  if args.most_recent:
-    (args.year, args.week) = get_last_completed_week()
-    args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
-
-  else:
-    if not args.week or not args.year or not args.version:
-      print "ERROR: must specify week, year, and version"
-    if args.version == "current":
-      args.version = corr_version(args.channel, get_week_endpoints(args.week, args.year)[0])
-
-  start_date = get_week_endpoints(args.week, args.year)[0]
-  #must be no larger than single week
-  if not args.tag:
-    args.tag = "week_of_" + start_date + "_" + str(args.channel)
-
-  output_dir = "/".join([current_dir,OUTPUT_DIR_BASE,args.tag])
-  if args.by_session:
-    output_dir += "_sessionwise"
-  output_dir += "/"
-  proc = subprocess.Popen(["mkdir",output_dir])
-  proc.wait()
-
-  os.environ["OUTPUTDIR"] = output_dir
-
-  filterfile = generate_filters(args, output_dir + "filter.json")
-  error, mr_file = run_mr(filterfile, output_dir + "mr_output.csv", args.local_only, args.streaming)
-  print output_dir + "../" + args.tag + ".csv"
-  if not args.by_session:
-    process_output(output_dir + "mr_output.csv", output_dir + "../" + args.tag + ".csv")
 
 if __name__ == '__main__':
   main()
