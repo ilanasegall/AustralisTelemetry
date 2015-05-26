@@ -33,6 +33,8 @@ def map(k, d, v, cx):
       return
     sysinfo = j["info"]
     locale = sysinfo["locale"]
+    uptime = s["uptime"]
+
     if BYSESSION and locale != "en-US":
       return #very hard to look at default search engines, etc, for non en-us. remove later.
 
@@ -66,7 +68,7 @@ def map(k, d, v, cx):
     feature_measures["features_moved"] = toolbars.get("defaultMoved",[])
     feature_measures["extra_features_added"] = toolbars.get("nondefaultAdded", [])
     feature_measures["features_removed"] = toolbars.get("defaultRemoved", [])
-  
+
     if "UITour" in ui:
       for tour in ui["UITour"]["seenPageIDs"]:
         tour_seen = tour
@@ -112,10 +114,11 @@ def map(k, d, v, cx):
       for event_string in enum_paths(i,[]):
         bucketless_events["-".join(event_string[0:-1])] += int(event_string[-1])
 
-
     for event_string,val in bucketless_events.items():
       payload_out.append((s_prefix + "," + event_string.encode('utf-8'), val))
 
+    #add uptime
+    payload_out.append((s_prefix + "," + "uptime", uptime))
 
 
     #We haven't errored out! Now we can write everything.
@@ -142,7 +145,7 @@ def reduce(k, v, cx):
       cx.write(k, i)
     return
   try:
-    if BYSESSION and "search" not in k.lower():
+    if BYSESSION and ("search" not in k.lower() or "uptime" not in k.lower()):
       return #too much info right now. we'll run out of memory
     cx.write(k, json.dumps(distn(v)))
   except Exception, e:
