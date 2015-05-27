@@ -47,6 +47,9 @@ def map(k, d, v, cx):
       if not "clientID" in j:
         logging.warning("no clientID")
         return
+      if j["clientID"] is None: #apparently this can happen
+        logging.warning("clientID is None")
+        return
       if j["clientID"][-1] not in ["1","2"]: #reduce the amount of output so that we don't run out of memory
         return
       prefix +=  "," + j["clientID"]   
