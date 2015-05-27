@@ -123,7 +123,6 @@ def map(k, d, v, cx):
     #add uptime
     payload_out.append((s_prefix + "," + "uptime", uptime))
 
-
     #We haven't errored out! Now we can write everything.
 
     cx.write(prefix+ ",instances", 1)
@@ -148,7 +147,7 @@ def reduce(k, v, cx):
       cx.write(k, i)
     return
   try:
-    if BYSESSION and ("search" not in k.lower() or "uptime" not in k.lower()):
+    if BYSESSION and "search" not in k.lower() and "uptime" not in k.lower():
       return #too much info right now. we'll run out of memory
     cx.write(k, json.dumps(distn(v)))
   except Exception, e:
